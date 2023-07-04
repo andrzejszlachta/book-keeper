@@ -25,22 +25,9 @@ function flashIncorrectInput(input) {
   }, 500);
 }
 
-// create a bookmark
-function createBookmark() {
-  const title = document.getElementById('title').value;
-  const address = validateLink(document.getElementById('address').value);
+// add bookmark to dom
+function addBookmark(title, address) {
   const favicon = `https://s2.googleusercontent.com/s2/favicons?domain_url=${address}`;
-
-  let incorrectInput = false;
-  if (!address) {
-    flashIncorrectInput(document.getElementById('address'));
-    incorrectInput = true;
-  };
-  if (!title) {
-    flashIncorrectInput(document.getElementById('title'));
-    incorrectInput = true;
-  }
-  if (incorrectInput) return;
   const bookmark = document.createElement('section');
   bookmark.classList = 'bookmarks__item';
   bookmark.innerHTML = 
@@ -52,7 +39,26 @@ function createBookmark() {
     <p class="bookmarks__item--text">${title}</p>
   </a>`;
   bookmarksContainer.appendChild(bookmark);
-  cancelBookmark();
+}
+
+// create a bookmark
+function createBookmark() {
+  const title = document.getElementById('title').value;
+  const address = validateLink(document.getElementById('address').value);
+  
+  let incorrectInput = false;
+  if (!address) {
+    flashIncorrectInput(document.getElementById('address'));
+    incorrectInput = true;
+  };
+  if (!title) {
+    flashIncorrectInput(document.getElementById('title'));
+    incorrectInput = true;
+  }
+  if (incorrectInput) return;
+  addBookmark(title, address)
+  hideNewBookmarkDialog();
+  saveBookmarks();
 };
 
 // enter listener
@@ -67,7 +73,7 @@ function newBookmark() {
 };
 
 // hide new bookmark dialog
-function cancelBookmark() {
+function hideNewBookmarkDialog() {
   addDialog.close();
   window.removeEventListener('keydown', enterListener);
 };
@@ -83,6 +89,7 @@ function removeBookmark(closeBtn) {
 function confirmDelete() {
   selectedBookmark.remove();
   deleteDialog.close();
+  saveBookmarks();
 };
 
 // hide delete bookmark dialog
@@ -91,9 +98,29 @@ function cancelDelete() {
   selectedBookmark = null;
 }
 
+// save bookmarks to local storage
+function saveBookmarks() {
+  const bookmarks = [...document.querySelectorAll('.bookmarks__item')].map((bookmark)=> {
+    return {
+      title: bookmark.querySelector('.bookmarks__item--text').textContent,
+      address: bookmark.querySelector('a').href,
+    }
+  })
+  localStorage.setItem('bookmarks', JSON.stringify(bookmarks))
+}
+
+// load bookmarks from local storage
+function loadBookmarks() {
+  const bookmarks = localStorage.getItem('bookmarks');
+  JSON.parse(bookmarks).forEach(bookmark => addBookmark(bookmark.title, bookmark.address));
+}
+
 // event listeners
 newBtn.addEventListener('click', newBookmark);
 addBtn.addEventListener('click', createBookmark);
-cancelBtn.addEventListener('click', cancelBookmark);
+cancelBtn.addEventListener('click', hideNewBookmarkDialog);
 noBtn.addEventListener('click', cancelDelete);
 yesBtn.addEventListener('click', confirmDelete);
+
+// on load
+loadBookmarks()
